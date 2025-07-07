@@ -11,30 +11,65 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Moon, Sun, Quote, Star, Share2 } from 'lucide-react'
+import { useTheme } from 'next-themes'
+
+type QuoteItem = {
+  quote: string
+  author: string
+}
 
 export default function QuoteGenerator() {
-  const [category, setCategory] = useState<string>('success')
-  const [quote, setQuote] = useState<string>('')
-
-  const getRandomQuote = (cat: string) => {
-    const quotes = quotesData[cat]
-    if (!quotes || quotes.length === 0) {
-      setQuote('No quotes available for this category.')
-      return
-    }
-    const randomIndex = Math.floor(Math.random() * quotes.length)
-    setQuote(quotes[randomIndex])
-  }
+  const [category, setCategory] = useState<string>('')
+  const [categories, setCategories] = useState<string[]>([])
+  const [currentQuote, setCurrentQuote] = useState<QuoteItem | null>(null)
+  const [favorites, setFavorites] = useState<QuoteItem[]>([])
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
-    getRandomQuote(category)
+    const keys = Object.keys(quotesData)
+    setCategories(keys)
+
+    if (keys.length > 0) {
+      setCategory(keys[0])
+    }
+  }, [])
+
+  useEffect(() => {
+    if (category) {
+      getRandomQuote(category)
+    }
   }, [category])
 
+  const getRandomQuote = (cat: string) => {
+    const quoteList = quotesData[cat]
+    if (!quoteList || quoteList.length === 0) {
+      setCurrentQuote({ quote: 'No quotes available in this category.', author: '' })
+      return
+    }
+    const index = Math.floor(Math.random() * quoteList.length)
+    setCurrentQuote(quoteList[index])
+  }
+
+  const handleFavorite = () => {
+    if (!currentQuote) return
+    const saved = JSON.parse(localStorage.getItem('favorites') || '[]')
+    const updated = [...saved, currentQuote]
+    localStorage.setItem('favorites', JSON.stringify(updated))
+    setFavorites(updated)
+  }
+
+  const handleShare = () => {
+    if (!currentQuote) return
+    const text = `"${currentQuote.quote}" — ${currentQuote.author}`
+    navigator.clipboard.writeText(text)
+    alert('Quote copied to clipboard!')
+  }
+
   return (
-    <div className="relative max-w-xl w-full px-8 py-12 rounded-xl bg-[#f8dfdc] text-center overflow-hidden shadow-md border border-[#eecbcb]
-">
+    <div className="relative max-w-xl w-full px-8 py-12 rounded-xl bg-background text-center overflow-hidden shadow-md border border-[#eecbcb] dark:border-zinc-700">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
         <svg viewBox="0 0 800 400" className="w-full h-full">
           <path d="M0 0C200 150 600 250 800 0V400H0V0Z" fill="#ebc9c4" />
         </svg>
@@ -42,26 +77,26 @@ export default function QuoteGenerator() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col gap-4 items-center">
-        <h2 className="text-2xl font-medium text-[#5a4c4c] font-serif">
-          Quote Generator
-        </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between w-full max-w-md">
+          <h2 className="text-2xl font-medium text-[#5a4c4c] font-serif dark:text-zinc-200">
+            Quote Generator
+          </h2>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 rounded border border-zinc-300 dark:border-zinc-600"
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
 
-        <motion.p
-          key={quote}
-          className="text-lg italic text-[#3f3f3f] max-w-md mt-2"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          "{quote}"
-        </motion.p>
-
+        {/* Category dropdown */}
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[220px] border-pink-300 bg-white">
+          <SelectTrigger className="w-[220px] border-pink-300 bg-white dark:bg-zinc-800 dark:text-white mt-1">
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {Object.keys(quotesData).map((key) => (
+            {categories.map((key) => (
               <SelectItem key={key} value={key}>
                 {key.charAt(0).toUpperCase() + key.slice(1)}
               </SelectItem>
@@ -69,12 +104,40 @@ export default function QuoteGenerator() {
           </SelectContent>
         </Select>
 
+        {/* New Quote Button */}
         <Button
-          onClick={() => getRandomQuote(category)} // ✅ Fixed here
-          className="bg-[#d97d7d] hover:bg-[#c76b6b] text-white font-medium rounded px-6 py-2"
+          onClick={() => getRandomQuote(category)}
+          className="bg-[#d97d7d] hover:bg-[#c76b6b] text-white font-medium rounded px-6 py-2 mt-1"
         >
-          Get New Quote
+          New Quote
         </Button>
+
+        {/* Quote display */}
+        {currentQuote && (
+          <motion.div
+            key={currentQuote.quote}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white dark:bg-zinc-900 shadow-md rounded p-4 italic border-l-4 border-pink-400 text-left text-zinc-700 dark:text-zinc-300 mt-4 max-w-md"
+          >
+            <div className="flex items-start gap-3">
+              <Quote size={16} className="text-pink-500 mt-1" />
+              <div className="flex-1">
+                <p>"{currentQuote.quote}"</p>
+                <p className="text-sm mt-2 text-right text-gray-500">— {currentQuote.author}</p>
+              </div>
+              <div className="flex flex-col gap-2 ml-2">
+                <button onClick={handleFavorite} title="Favorite">
+                  <Star size={18} className="text-yellow-400 hover:scale-110" />
+                </button>
+                <button onClick={handleShare} title="Share">
+                  <Share2 size={18} className="text-blue-400 hover:scale-110" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   )
