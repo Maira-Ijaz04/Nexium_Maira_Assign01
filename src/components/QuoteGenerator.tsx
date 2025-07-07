@@ -23,7 +23,7 @@ export default function QuoteGenerator() {
   const [category, setCategory] = useState<string>('')
   const [categories, setCategories] = useState<string[]>([])
   const [currentQuote, setCurrentQuote] = useState<QuoteItem | null>(null)
-  const [favorites, setFavorites] = useState<QuoteItem[]>([])
+
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function QuoteGenerator() {
     const saved = JSON.parse(localStorage.getItem('favorites') || '[]')
     const updated = [...saved, currentQuote]
     localStorage.setItem('favorites', JSON.stringify(updated))
-    setFavorites(updated)
+    
   }
 
   const handleShare = () => {
@@ -124,7 +124,7 @@ export default function QuoteGenerator() {
             <div className="flex items-start gap-3">
               <Quote size={16} className="text-pink-500 mt-1" />
               <div className="flex-1">
-                <p>"{currentQuote.quote}"</p>
+              <p>&ldquo;{currentQuote.quote}&rdquo;</p>  
                 <p className="text-sm mt-2 text-right text-gray-500">— {currentQuote.author}</p>
               </div>
               <div className="flex flex-col gap-2 ml-2">
